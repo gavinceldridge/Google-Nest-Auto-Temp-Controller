@@ -1,0 +1,23 @@
+{
+  "name": "Google-Nest-Auto-Temp-Controller",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gavinceldridge/Google-Nest-Auto-Temp-Controller.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gavinceldridge/Google-Nest-Auto-Temp-Controller/issues"
+  },
+  "homepage": "https://github.com/gavinceldridge/Google-Nest-Auto-Temp-Controller#readme",
+  "dependencies": {
+    "axios": "^0.21.4"
+  }
+}
