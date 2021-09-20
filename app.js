@@ -52,5 +52,6 @@ const run = async () => {
 
 
 }
+
 run();
 setInterval(run, 1800000);//set an interval to run every 30 minutes

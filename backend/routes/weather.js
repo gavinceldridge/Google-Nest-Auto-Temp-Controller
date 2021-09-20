@@ -16,7 +16,6 @@ router.post("/", async (req, res, next) => {
         console.log(result.data);
         return res.json({ weather: result.data });
     } catch (e) {
-        console.log("HOUSTON WE HAVE AN ERROR")
         return next(e);
     }
 
