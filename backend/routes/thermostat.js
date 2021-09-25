@@ -19,64 +19,118 @@ const getNewToken = async (refreshToken = REFRESH_TOKEN) => {
     thermostatAccessToken = result.data.access_token;
 }
 
-const convertCelsiusToFarenheit = (cel) => {
+const convertCelsiusToFahrenheit = (cel) => {
     return (cel * (9 / 5) + 32);
 }
 
+const convertFahrenheitToCelsius = (far) => {
+    return (far - 32) * 5 / 9;
+}
+
 const compareWithWeather = async () => {
-    console.log("checking current weather data...");
-    if (!thermostatAccessToken) await getNewToken();
+    try {
 
-    //get the current weather
-    const weatherResponse = await axios.get(`${BASE_WEATHER_API_URL}?lat=${LAT}&lon=${LON}&appid=${WEATHER_API_ID}&units=imperial`);
+        console.log("checking current weather data...");
+        if (!thermostatAccessToken) await getNewToken();
 
-    //get the current thermostat data
-    const thermostatResponse = await axios.get(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices`,
-        {
-            headers: {
-                "Authorization": `Bearer ${thermostatAccessToken}`
-            }
-        });
+        //get the current weather
+        const weatherResponse = await axios.get(`${BASE_WEATHER_API_URL}?lat=${LAT}&lon=${LON}&appid=${WEATHER_API_ID}&units=imperial`);
 
-    console.log(weatherResponse.data);
-    console.log(thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatMode']);
-    let weatherTemp = weatherResponse.data.main.feels_like;
-    if (thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatMode'].mode === "COOL") {
-        //if ac is running & climate inside is warmer than outside, turn it off
-
-        let thermoTemp = convertCelsiusToFarenheit(thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatTemperatureSetpoint'].coolCelsius);
-        if (thermoTemp && thermoTemp > weatherTemp) {
-            console.log("temp outside is lower than the house temp, powering off the ac");
-
-            const data = {
-                "command": "sdm.devices.commands.ThermostatMode.SetMode",
-                "params": {
-                    "mode": "OFF"
+        //get the current thermostat data
+        const thermostatResponse = await axios.get(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices`,
+            {
+                headers: {
+                    "Authorization": `Bearer ${thermostatAccessToken}`
                 }
-            }
-            const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
-            await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
-            // console.log(result);
-        }
-    } else {
-        //if ac is not running & climate outside is warmer than the last temperature, turn it on
-        //currently not checking the last temp, just if its over 72
-        if (weatherTemp > 72) {
-            console.log("temp outside is higher than 72 degrees, powering on the ac");
+            });
 
-            const data = {
-                "command": "sdm.devices.commands.ThermostatMode.SetMode",
-                "params": {
-                    "mode": "COOL"
+        console.log(weatherResponse.data);
+        console.log(thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatMode']);
+        let weatherTemp = weatherResponse.data.main.feels_like;
+        if (thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatMode'].mode === "COOL") {
+            //if ac is running & climate inside is warmer than outside, turn it off
+
+            let thermoTemp = convertCelsiusToFahrenheit(thermostatResponse.data.devices[0].traits['sdm.devices.traits.ThermostatTemperatureSetpoint'].coolCelsius);
+            if (thermoTemp && thermoTemp > weatherTemp) {
+                console.log("temp outside is lower than the house temp, powering off the ac");
+
+                const data = {
+                    "command": "sdm.devices.commands.ThermostatMode.SetMode",
+                    "params": {
+                        "mode": "OFF"
+                    }
                 }
+                const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
+                await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
+                // console.log(result);
             }
-            const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
-            await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
         } else {
-            console.log("no changes made");
+            //if ac is not running & climate outside is warmer than the last temperature, turn it on
+            //currently not checking the last temp, just if its over 72
+            if (weatherTemp > 72) {
+                console.log("temp outside is higher than 72 degrees, powering on the ac");
+
+                const data = {
+                    "command": "sdm.devices.commands.ThermostatMode.SetMode",
+                    "params": {
+                        "mode": "COOL"
+                    }
+                }
+                const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
+                await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
+            } else {
+                console.log("no changes made");
+            }
         }
+    } catch (e) {
+        console.log(e);
     }
 }
+
+/*change the temperature
+Body: {
+    temperature: int,
+    command: <SetHeat>, <SetCool>
+}
+*/
+router.post("/temperature", async (req, res, next) => {
+
+    try {
+
+        if (!thermostatAccessToken) await getNewToken();
+        let { temperature, command } = req.body;
+        temperature = convertFahrenheitToCelsius(temperature);
+
+
+        if (command === "SetHeat") {
+
+            const data = {
+                "command": "sdm.devices.commands.ThermostatTemperatureSetpoint.SetHeat",
+                "params": {
+                    "heatCelsius": temperature
+                }
+            }
+
+            const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
+            await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
+
+        } else if (command === "SetCool") {
+
+            const data = {
+                "command": "sdm.devices.commands.ThermostatTemperatureSetpoint.SetCool",
+                "params": {
+                    "coolCelsius": temperature
+                }
+            }
+
+            const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
+            await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
+            return res.json({})
+        }
+    } catch (e) {
+        return next(e);
+    }
+});
 
 router.post("/timer", async (req, res, next) => {
     try {
@@ -166,6 +220,7 @@ router.get("/", async (req, res, next) => {
         return res.json(result.data);
 
     } catch (e) {
+        console.log(e);
         return next(e);
     }
 
