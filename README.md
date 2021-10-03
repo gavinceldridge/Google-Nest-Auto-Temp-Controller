@@ -2,7 +2,12 @@
 
 ![Screenshot](Screenshot.png)
 
-A tool to automatically control my Nest Home thermostat to automatically turn off when the outside temperature is cooler than the inside AC. 
+A tool to control my Nest Home Thermostat to automatically turn off when the outside temperature is cooler than the inside AC. This will hopefully do some good for my power bill as well as the environment! It includes a manual controller so my roommates and I can change the thermostat should we forget if we left the house or are just feeling too potato-y to go to the physical thermostat.
+
+### Disclaimer
+The source code here is old. New code can be found at the following repositories:
+- [Backend](https://github.com/gavinceldridge/Nest-Backend)
+- [Frontend](https://github.com/gavinceldridge/Nest-Frontend)
 
 ## Tech Stack:
 ### Backend:
@@ -18,7 +23,8 @@ A tool to automatically control my Nest Home thermostat to automatically turn of
 - [Open Weather API](https://openweathermap.org/current)
 
 ## Current Goals:
-- Make it adoptable for others
+- Add text notifications using [Twilio](https://www.twilio.com/)
+- Make it easily adoptable for others (even the non-tech oriented)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
