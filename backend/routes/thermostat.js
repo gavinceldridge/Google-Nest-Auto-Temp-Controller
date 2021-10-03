@@ -151,8 +151,7 @@ router.post("/timer", async (req, res, next) => {
 
         let status = intervalId !== undefined ? "on" : "off";
         let response = {
-            status,
-
+            status
         }
 
         return res.json(response);
@@ -193,7 +192,6 @@ router.post("/mode", async (req, res, next) => {
 
         const headerContent = { Authorization: `Bearer ${thermostatAccessToken}` };
         const result = await axios.post(`${SMART_DEVICES_URL}/${PROJECT_ID}/devices/${DEVICE_ID}:executeCommand`, data, { headers: headerContent });
-        console.log(result);
         return res.json({ mode });
     } catch (e) {
         // console.log(e);
@@ -209,6 +207,7 @@ router.get("/", async (req, res, next) => {
         if (!thermostatAccessToken) {
             await getNewToken();
         }
+        console.log(thermostatAccessToken);
 
         let url = `${SMART_DEVICES_URL}/${PROJECT_ID}/devices`;
         const result = await axios.get(url,
@@ -217,10 +216,11 @@ router.get("/", async (req, res, next) => {
                     "Authorization": `Bearer ${thermostatAccessToken}`
                 }
             });
+
         return res.json(result.data);
 
     } catch (e) {
-        console.log(e);
+        // console.log(e);
         return next(e);
     }
 

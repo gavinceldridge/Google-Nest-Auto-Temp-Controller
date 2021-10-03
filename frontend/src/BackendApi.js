@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:3001";
+const BASE_URL = process.env.BACKEND_API_URL || "http://10.0.0.25:3001";
 
 
 class BackendApi {
@@ -51,11 +51,19 @@ class BackendApi {
     }
 
     static async changeTemperature(temperature, mode) {
+
+        if (mode === "COOL") {
+            mode = "SetCool";
+        } else if (mode === "HEAT") {
+            mode = "SetHeat";
+        }
+
         await this.request("thermostat/temperature", { temperature, "command": mode }, "post");
     }
 
     static async changeTimer(mode) {
-        await this.request("thermostat/timer", { mode }, "post");
+        const res = await this.request("thermostat/timer", { mode }, "post");
+        return res;
     }
 
 }

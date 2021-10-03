@@ -1,100 +1,115 @@
 import { React, useState, useEffect } from 'react'
 import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Button from "react-bootstrap/Button";
 import BackendApi from './BackendApi';
 
 export default function ThermostatController() {
 
-    const [thermostatInfo, setThermostatInfo] = useState();
-    const [formData, setFormData] = useState({ mode: "", modeOptions: ["Off", "Cool", "Heat"], temp: "" });
+	const [formData, setFormData] = useState({ mode: "", modeOptions: ["OFF", "COOL", "HEAT"], temp: "", autoStatus: "" });
 
 
+	const convertCelsiusToFahrenheit = (cel) => {
+		return (cel * (9 / 5) + 32);
+	}
 
-    const convertCelsiusToFahrenheit = (cel) => {
-        return (cel * (9 / 5) + 32);
-    }
+	const convertFahrenheitToCelsius = (far) => {
+		return (far - 32) * 5 / 9;
+	}
 
-    const convertFahrenheitToCelsius = (far) => {
-        return (far - 32) * 5 / 9;
-    }
+	//initialize UI data
+	useEffect(() => {
+		const initData = async () => {
 
-    useEffect(async () => {
-        //initialize thermostatInfo
-        const deviceInfo = await BackendApi.getDeviceInfo()
-        setThermostatInfo(deviceInfo);
-        let temp = "";
-        const mode = deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatMode"].mode;
-        console.log(deviceInfo.devices[0].traits['sdm.devices.traits.ThermostatMode']);
-        if (mode === "COOL") temp = convertCelsiusToFahrenheit(deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatTemperatureSetpoint"].coolCelcius);
-        else if (mode === "HEAT") temp = convertCelsiusToFahrenheit(deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatTemperatureSetpoint"].heatCelcius);
-        console.log(deviceInfo.devices[0].traits);
-        setFormData(data => ({
-            ...data,
-            mode: mode,
-            temp: 72
-        }));
-        console.log("start");
-    }, []);
+			const deviceInfo = await BackendApi.getDeviceInfo();
+			const mode = deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatMode"].mode;
+			document.getElementById("mode").value = mode;
 
-    const tempFormHandler = async (evt) => {
+			let temp = "";
+			if (mode === "COOL") temp = convertCelsiusToFahrenheit(deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatTemperatureSetpoint"]['coolCelsius']);
+			else if (mode === "HEAT") temp = convertCelsiusToFahrenheit(deviceInfo.devices[0].traits["sdm.devices.traits.ThermostatTemperatureSetpoint"].heatCelsius);
+			document.getElementById("temp").value = temp;
+			temp = temp.toFixed(1);
+
+			//get the current status of the smart detector
+			const statusResponse = await BackendApi.changeTimer("");
+			const status = statusResponse.status.toUpperCase();
+			document.getElementById("autodetect").value = status;
+			setFormData(data => ({
+				...data,
+				mode: mode,
+				temp: temp,
+				autoStatus: status
+			}));
+		}
+
+		initData();
+
+	}, []);
+
+	const formChangeHandler = async (evt) => {
+
+		// console.log(evt.target.value);
+		const { name, value } = evt.target;
+		setFormData(data => ({
+			...data,
+			[`${name}`]: value
+		}));
+
+		if (name === "mode") {
+			await BackendApi.changeMode(value.toUpperCase());
+		} else if (name === "autodetect") {
+
+		}
+	}
+
+	const changeTemp = async () => {
+		console.log(`changing temp to: ${formData.temp}`)
+		await BackendApi.changeTemperature(formData.temp, formData.mode);
+	}
+
+	return (
+		<div className="mt-3">
+			<Row className="justify-content-center">
+				<h1>Temperature Controller</h1>
+			</Row>
+			<Row className="justify-content-center mt-5">
+				<Col xs={8}>
+
+					<Form.Group as={Row} id="mode">
+						<Form.Label column sm={5}><h3>Mode</h3></Form.Label>
+						<Col sm={6}>
+							<Form.Control as="select" size="lg" name="mode" onChange={formChangeHandler} value={formData.mode} >
+								{formData.modeOptions.map(val => <option key={val}>{val}</option>)}
+							</Form.Control>
+						</Col>
+					</Form.Group>
+
+					<Form.Group as={Row} id="temp">
+						<Form.Label column sm={5}><h3>Temperature</h3></Form.Label>
+						<Col sm={5}>
+							<Form.Control type="number" size="lg" name="temp" onChange={formChangeHandler} value={formData.temp} data-testid="tempId"></Form.Control>
+						</Col>
+						<Col sm={1}>
+							<Button variant="primary" name="confirm" onClick={changeTemp} data-testid="confirmBtn">Confirm</Button>
+						</Col>
+
+					</Form.Group>
+
+					<Form.Group as={Row} id="autodetect">
+						<Form.Label column sm={5}><h3>Autodetect temp outside</h3></Form.Label>
+						<Col sm={6}>
+							<Form.Control as="select" size="lg" name="autodetect" onChange={formChangeHandler}>
+								<option key={1}>ON</option>
+								<option key={2}>OFF</option>
+							</Form.Control>
+						</Col>
+					</Form.Group>
+				</Col>
+			</Row >
 
 
-
-    }
-
-    const modeFormHandler = async (evt) => {
-
-        // console.log(evt.target.value);
-        const { name, value } = evt.target;
-        console.log(name, value);
-        setFormData(data => ({
-            ...data,
-            mode: value
-        }));
-
-        await BackendApi.changeMode(value.toUpperCase());
-
-    }
-
-    return (
-        <div className="mt-3">
-            <Row className="justify-content-center">
-                <h1>Temperature Controller</h1>
-            </Row>
-            <Row className="justify-content-center mt-5">
-                <Col xs={8}>
-
-                    <Form.Group as={Row} controlId="formHorizontalMode">
-                        <Form.Label column sm={5}><h3>Mode</h3></Form.Label>
-                        <Col sm={6}>
-                            <Form.Control as="select" size="lg" name="mode" onChange={modeFormHandler} >
-                                {formData.modeOptions.map(val => <option>{val}</option>)}
-                            </Form.Control>
-                        </Col>
-                    </Form.Group>
-
-                    <Form.Group as={Row} controlId="formHorizontalMode">
-                        <Form.Label column sm={5}><h3>Temperature</h3></Form.Label>
-                        <Col sm={6}>
-                            <Form.Control type="number" size="lg" name="temp" onChange={tempFormHandler} value={formData.temp} ></Form.Control>
-                        </Col>
-                    </Form.Group>
-
-                    <Form.Group as={Row} controlId="formHorizontalMode">
-                        <Form.Label column sm={5}><h3>Autodetect temp outside</h3></Form.Label>
-                        <Col sm={6}>
-                            <Form.Control as="select" size="lg" name="autodetect" onChange={tempFormHandler}>
-                                <option>On</option>
-                                <option>Off</option>
-                            </Form.Control>
-                        </Col>
-                    </Form.Group>
-                </Col>
-            </Row>
-
-
-        </div>
-    )
+		</div >
+	)
 }
