@@ -25,6 +25,7 @@ The source code here is old. New code can be found at the following repositories
 ## Current Goals:
 - Add text notifications using [Twilio](https://www.twilio.com/)
 - Make it easily adoptable for others (even the non-tech oriented)
+- More testing
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
